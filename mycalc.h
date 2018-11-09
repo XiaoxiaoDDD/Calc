@@ -1,10 +1,24 @@
 #include <iostream>
-#include <queue>
+#include <vector>
+#include <stack>
 #include <string>
+#include <fstream>
+#include <ctype.h>
+#include <locale>
 
 
-class MyCalc
+using namespace std;
+
+class Variable;
+class Node;
+
+enum Type
 {
+    var, num, opt, bra1, bra2
+    
+};
+
+class MyCalc{
 public:
 	MyCalc(char *, char *);
 
@@ -12,14 +26,19 @@ private:
 	std::vector<std::string> lines;
 	std::vector <Variable> solved;
 	std::vector <Variable> unsolved;
-	read_input(char *, std::vector<std::string> &);
-	process_line(std::string);
-	generate_output();
-
+	void read_input(char *);
+	void process_line(std::string &);
+	std::stack<std::pair<Type,std::string> > in2pre(std::vector<std::pair<Type,std::string> > &);
+    int sequence(std::string);
+    bool inferior(std::string , std::string );
+    std::vector< std::pair<Type,std::string> > sort_out(std::string &);
+    bool is_operator(char &);
+	void generate_output();
+  
 };
 
-class Variable
-{
+
+class Variable{
 public:
 	std::string name;
 	std::string status;
@@ -33,22 +52,20 @@ private:
 };
 
 
+
 struct Node
 {
 	std::string value;
-	Node * parent;
-	Node * left;
-	Node * right
-	Node(std::string value)
-	:value(value){
-		left = NULL;
-		right = NULL;
-		parent = NULL;
+	Type type; //numeric, var; or 
+	bool external; //also means that it has a numeric value, rather than being an operator
+	Node * parent=NULL;
+	Node * left = NULL;
+	Node * right= NULL;
+	Node(std::string value, Type type)
+	:value(value), type (type){
+
 	}
-	Node(std::string value, Node * parent)
-	:value(value), parent(parent){
-		left = NULL;
-		right = NULL;
-		parent = NULL;
+	Node(std::string value, Node * parent, Type type)
+	:value(value), parent(parent), type(type){
 	}
 };

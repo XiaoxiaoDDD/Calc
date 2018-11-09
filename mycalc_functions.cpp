@@ -1,29 +1,38 @@
 #include "mycalc.h"
 
-MyCalc::MaCalc(char * input_file, char * output_file,){
+
+MyCalc::MyCalc(char * input_file, char * output_file){
 	read_input(input_file);
-	for (std::string l in lines){
-		process_line(l);
+	for (int i = 0; i < lines.size(); i++){
+		process_line(lines[i]);
 	}
 
 }
 
 
-void MyCalc::read_input(char * file_name, std::vector<std::string> & lines){
+void MyCalc::read_input(char * file_name){ //read each line, break it into the name of the variable and its values
 	std::string line;
+	std::string processed_line;
 
-	std::ifstream inputfile(file_name);
+	std::ifstream input(file_name);
 
-	if (inputfile.is_open()){
-		while (std::getline(inputfile,line)){
+	if (input.is_open()){
+		while (std::getline(input,line)){
 			line =line.substr(0, line.length() - 1);
-			lines.push_back(line);
+			for (std::string::iterator it = line.begin(); it != line.end(); it++){ //to purge the unnecessary symbols and spaces
+				if (*it !=' ' && *it != ';' && *it != '\0' && *it != '\r'){
+					processed_line.push_back(*it);
+				}
+			}
+			lines.push_back(processed_line);
+			//std::cout << processed_line <<std::endl;
+			processed_line = "";
 		}
 	}
-	inputfile.close();
+	input.close();
 }
 
-void MyCalc::process_line(std::string line){
+void MyCalc::process_line(std::string& line){ //for each line, return the root of the tree
 	std::string name;
 	int position;  //of '='
 	for (int i = 0; i < line.length(); i++){
@@ -32,50 +41,159 @@ void MyCalc::process_line(std::string line){
 			break;
 		}
 	}
+
 	name = line.substr(0, position);
+	std::cout << name <<std::endl;
 
-	make_tree(line.substr(posiiton+1, line.length()-posiiton - 1));
+	std::string instru;
+	instru = line.substr(position+1,line.length()-position-1);
 
-	char * iterator;
+	std::vector< std::pair<Type,std::string> > elements;
+	elements = sort_out(instru);
+
+	stack< std::pair<Type,std::string> > pre_order;
+	pre_order = in2pre(elements);
+
+	//debug
+	while (!pre_order.empty()){
+		std::cout << pre_order.top().second<< " ";
+		pre_order.pop();
+	}
+	std::cout <<std::endl;
+
+	//return what
 
 }
 
-void MyCalc::make_tree(std::string & instructions){
-	std::string tmp, left, right;
-	tmp = "";
-	left = "";
-	right = "";
-	while (instructions.empty() != 1){
-		if (instructions.begin().is_operator){
-			Node * node;
-			node = new Node (instructions.being());
-			node -> left = Node (tmp, node);
+stack<std::pair<Type,std::string> > MyCalc::in2pre(std::vector<std::pair<Type,std::string> > & elements){ //convert from inorder to preorder
+	//***citing Lab 5 solution's infix2postfix member function
+	stack< pair <Type, string> > pre_order;
+	stack< pair <Type, string> > tmp;
+	std::pair<Type,std::string> p;
+	p.first = bra2;
+	p.second =")";
+	elements.push_back(p);
+	std::pair<Type,std::string> q;
+	q.first = bra1;
+	q.second ="(";
+	tmp.push(q);
 
+	int i = 0; 
+	while (!tmp.empty()){
+		std::pair <Type, string> ele = elements[i++];
+		if (ele.first ==num || ele.first == var){
+			pre_order.push(ele);
+		}
+		else if (ele.first == bra1 ){
+			tmp.push(ele);
+		}
+		else if (ele.first == opt){
+			while (tmp.top().first == opt && inferior(ele.second, tmp.top().second)){
+				pre_order.push(tmp.top());
+				tmp.pop(); 
+			}
+			tmp.push(ele);
+		}
+		else if (ele.first == bra2 ){
+			while (tmp.top().first!= bra1){
+				pre_order.push(tmp.top());
+				tmp.pop();
+			}
+			tmp.pop();
+		}
+	}
+	return pre_order;
+}
+
+int MyCalc::sequence(string o){
+	if (o =="+" || o =="-") return 1;
+	else if (o =="*" || o =="/"|| o =="%") return 2;
+	else if (o =="++" || o =="--"|| o =="**") return 3;
+	else return 0;
+}
+
+bool MyCalc::inferior(string a, string b){
+	if (sequence(a)<= sequence(b)) return 1;
+	else return 0;
+}
+
+
+std::vector< std::pair<Type,std::string> > MyCalc::sort_out(std::string & instructions){ //take the characters and sort them into var, num, baracketes and  operators
+	//and return a pre-order list of all the elements
+
+	std::string tmp;
+	tmp = "";
+	std::vector<std::pair<Type,std::string> > instruction_list;
+	for (std::string::iterator it = instructions.begin(); it!=instructions.end(); it++){
+		
+		if (isalpha(*it)){
+			while (isalpha(*it)){
+				tmp.push_back(*it);
+                it++;
+			}
+            it--;
+			if (tmp !="mod"){
+                std::pair<Type,std::string> p;
+				p.first = var;
+				p.second = tmp;
+				instruction_list.push_back(p);
+				tmp = "";
+			}
+			else{
+                std::pair<Type,std::string> p;
+				p.first = opt;
+				p.second = '%';
+				instruction_list.push_back(p);
+				tmp = "";
+			}
+		}
+		else if (isdigit(*it)){
+			while (isdigit(*it)){
+				tmp.push_back(*it);
+                it++;
+			}
+            it--;
+            std::pair<Type,std::string> p;
+			p.first = num;
+			p.second = tmp;
+			instruction_list.push_back(p);
+			tmp = "";
+
+		}
+		else if (is_operator(*it)){
+			while(is_operator(*it)){
+				tmp.push_back(*it);
+                it++;
+			}
+            it--;
+            std::pair<Type,std::string> p;
+			p.first = opt;
+			p.second = tmp;
+			instruction_list.push_back(p);
+			tmp = "";
 		}
 		else{
-			tmp.push_back(instructions.begin());
+			if (*it=='('){
+                std::pair<Type,std::string> p;
+				p.first = bra1;
+				p.second = "(";
+				instruction_list.push_back(p);
+				tmp = "";	
+			}
+			else if (*it== ')'){
+                std::pair<Type,std::string> p;
+				p.first = bra2;
+				p.second = ")";
+				instruction_list.push_back(p);
+				tmp = "";
+			}
 		}
-
-
 	}
-
-
-
-
-}
-
-void MyCalc::insert(){
-
-
-}
-
-void MyCalc::is_operator(char o){
-	if (o =='' ||o =='-' ||o =='-' ||o =='-' ||o =='-' || \
-		o =='+' || o =='-' || o =='*' || o =='/' || o =='%') return TRUE;
-	else return FALSE;
+	return instruction_list;
 }
 
 
-void MyCalc::generate_ouput(){
-
+bool MyCalc::is_operator(char & o){
+	if (o =='+' || o =='-' || o =='*' || o =='/' || o =='%') return 1;
+	else return 0;
 }

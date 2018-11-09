@@ -1,15 +1,14 @@
 
-myspeller: main.o enquiry.o incomplete.o
-	g++ main.o enquiry.o incomplete.o -o myspeller
+mycalc: mycalc.o mycalc_functions.o
+	g++ mycalc.o mycalc_functions.o -o mycalc
+
+
+mycalc.o: mycalc.cpp
+	g++ -std=c++11 -c mycalc.cpp
+
 	
-main.o: main.cpp
-	g++ -c main.cpp
-
-enquiry.o: enquiry.cpp
-	g++ -c enquiry.cpp
-
-incomplete.o: incomplete.cpp
-	g++ -c incomplete.cpp
+mycalc_functions.o: mycalc_functions.cpp
+	g++ -std=c++11 -c mycalc_functions.cpp
 
 clean:
-	rm *.o myspeller
+	rm *.o mycalc
