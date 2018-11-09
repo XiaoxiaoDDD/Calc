@@ -1,4 +1,5 @@
 #include "mycalc.h"
+#include <stdlib.h> 
 
 
 MyCalc::MyCalc(char * input_file, char * output_file){
@@ -10,9 +11,10 @@ MyCalc::MyCalc(char * input_file, char * output_file){
 }
 
 
-void MyCalc::read_input(char * file_name){ //read each line, break it into the name of the variable and its values
+void MyCalc::read_input(char * file_name){ //read each line, break it into the name of the variable and its values, and sanity check
 	std::string line;
 	std::string processed_line;
+	std::stack<char> opening_bracket; //this stack is to do the sanity check that the brackets are balanced
 
 	std::ifstream input(file_name);
 
@@ -20,13 +22,29 @@ void MyCalc::read_input(char * file_name){ //read each line, break it into the n
 		while (std::getline(input,line)){
 			line =line.substr(0, line.length() - 1);
 			for (std::string::iterator it = line.begin(); it != line.end(); it++){ //to purge the unnecessary symbols and spaces
-				if (*it !=' ' && *it != ';' && *it != '\0' && *it != '\r'){
+				if (*it !=' ' || *it != ';' || *it != '\0' || *it != '\r'){
 					processed_line.push_back(*it);
+					if (*it =='('){
+						opening_bracket.push('(');
+
+					}
+					else if (*it ==')'){
+						opening_bracket.pop();
+					}
 				}
 			}
+			if (!opening_bracket.empty()){
+				processed_line = '~'+ processed_line;
+				std::cout << "The barcketes is not balanced in this line: "<< line << std::endl;
+
+			}
 			lines.push_back(processed_line);
+			//debug: 
 			//std::cout << processed_line <<std::endl;
 			processed_line = "";
+			while (!opening_bracket.empty()){
+				opening_bracket.pop();
+			}
 		}
 	}
 	input.close();
@@ -43,36 +61,51 @@ void MyCalc::process_line(std::string& line){ //for each line, return the root o
 	}
 
 	name = line.substr(0, position);
-	std::cout << name <<std::endl;
-
-	std::string instru;
-	instru = line.substr(position+1,line.length()-position-1);
-
-	std::vector< std::pair<Type,std::string> > elements;
-	elements = sort_out(instru);
-
-	stack< std::pair<Type,std::string> > pre_order;
-	pre_order = in2pre(elements);
-
-	//debug
-	while (!pre_order.empty()){
-		std::cout << pre_order.top().second<< " ";
-		pre_order.pop();
+	if (name[0] == '~'){
+		Variable * broken_variable = new Variable (name.substr(1,name.length()-1),"broken");
+		variables.push_back(broken_variable);
 	}
-	std::cout <<std::endl;
+	else{
+		std::cout << name <<std::endl;
+		Variable * good_variable = new Variable (name,"unsolved");
+		variables.push_back(good_variable);
 
-	//return what
+		std::string instru;
+		instru = line.substr(position+1,line.length()-position-1);
+
+		std::vector< std::pair<Type,std::string> > elements;
+		elements = sort_out(instru);
+
+		if (elements.size() ==1 && elements[0].first == num){
+			good_variable->status = "solved";
+			good_variable->value = std::stoi(elements[0].second);
+		}
+
+		stack< std::pair<Type,std::string> > pre_order;
+		pre_order = in2pre(elements);
+
+		//debug
+		while (!pre_order.empty()){
+			std::cout << pre_order.top().second<< " ";
+			pre_order.pop();
+		}
+		std::cout <<std::endl;	
+	}
+
 
 }
 
 stack<std::pair<Type,std::string> > MyCalc::in2pre(std::vector<std::pair<Type,std::string> > & elements){ //convert from inorder to preorder
 	//***citing Lab 5 solution's infix2postfix member function
+	//pre-order is the final list
 	stack< pair <Type, string> > pre_order;
-	stack< pair <Type, string> > tmp;
 	std::pair<Type,std::string> p;
 	p.first = bra2;
 	p.second =")";
 	elements.push_back(p);
+
+	//tmp is a intermediate container
+	stack< pair <Type, string> > tmp;
 	std::pair<Type,std::string> q;
 	q.first = bra1;
 	q.second ="(";
@@ -125,7 +158,7 @@ std::vector< std::pair<Type,std::string> > MyCalc::sort_out(std::string & instru
 	tmp = "";
 	std::vector<std::pair<Type,std::string> > instruction_list;
 	for (std::string::iterator it = instructions.begin(); it!=instructions.end(); it++){
-		
+		//put the subsequent characters into a unit
 		if (isalpha(*it)){
 			while (isalpha(*it)){
 				tmp.push_back(*it);
@@ -148,6 +181,7 @@ std::vector< std::pair<Type,std::string> > MyCalc::sort_out(std::string & instru
 			}
 		}
 		else if (isdigit(*it)){
+			//put the subsequent digits into a unit
 			while (isdigit(*it)){
 				tmp.push_back(*it);
                 it++;
@@ -161,6 +195,7 @@ std::vector< std::pair<Type,std::string> > MyCalc::sort_out(std::string & instru
 
 		}
 		else if (is_operator(*it)){
+			////put the operators characters into a unit, just in case there are ++, --, **
 			while(is_operator(*it)){
 				tmp.push_back(*it);
                 it++;
@@ -189,7 +224,7 @@ std::vector< std::pair<Type,std::string> > MyCalc::sort_out(std::string & instru
 			}
 		}
 	}
-	return instruction_list;
+	return instruction_list; //a list of pairs, which info about its type and its content
 }
 
 

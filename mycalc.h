@@ -10,7 +10,6 @@
 using namespace std;
 
 class Variable;
-class Node;
 
 enum Type
 {
@@ -24,8 +23,7 @@ public:
 
 private:
 	std::vector<std::string> lines;
-	std::vector <Variable> solved;
-	std::vector <Variable> unsolved;
+	std::vector <Variable *> variables;
 	void read_input(char *);
 	void process_line(std::string &);
 	std::stack<std::pair<Type,std::string> > in2pre(std::vector<std::pair<Type,std::string> > &);
@@ -41,11 +39,10 @@ private:
 class Variable{
 public:
 	std::string name;
-	std::string status;
+	std::string status; //solved, unsolved, broken
 	int value;
-	Variable(std::string name, std::vector<Node> tree);
-	Variable(std::string name, int value);
-	
+	Variable(std::string name, std::string status);
+	Variable(std::string name, std::string status, int value);
 
 private:
 
