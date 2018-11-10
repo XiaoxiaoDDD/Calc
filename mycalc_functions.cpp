@@ -218,6 +218,10 @@ std::vector< std::pair<Type,std::string> > MyCalc::sort_out(Variable * vari, std
                 if (*it != c) break;
 			}
             it--;
+            if (tmp =="-" &&( is_operator(*(--it))|| *it =='(') ){
+            	tmp = "~";
+            }
+            it++;
             std::pair<Type,std::string> p;
 			p.first = opt;
 			p.second = tmp;
