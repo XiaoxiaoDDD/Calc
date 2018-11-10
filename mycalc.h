@@ -26,10 +26,11 @@ private:
 	std::vector <Variable *> variables;
 	void read_input(char *);
 	void process_line(std::string &);
+	void create_variable(string, string&);
 	std::stack<std::pair<Type,std::string> > in2pre(std::vector<std::pair<Type,std::string> > &);
     int sequence(std::string);
     bool inferior(std::string , std::string );
-    std::vector< std::pair<Type,std::string> > sort_out(std::string &,std::string &);
+    std::vector< std::pair<Type,std::string> > sort_out(Variable *,std::string &);
     bool is_operator(char &);
 	void generate_output();
   
@@ -44,9 +45,10 @@ public:
 	int value;
 	Variable(std::string name, std::string status);
 	Variable(std::string name, std::string status, int value);
+	stack< std::pair<Type,std::string> > pre_order_expressions;
 
 private:
-	stack< std::pair<Type,std::string> > pre_order_expressions;
+	
 
 };
 

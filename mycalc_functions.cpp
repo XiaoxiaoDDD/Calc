@@ -53,7 +53,7 @@ void MyCalc::read_input(char * file_name){ //read each line, break it into the n
 }
 
 void MyCalc::process_line(std::string& line){ //for each line, return the root of the tree
-	std::string name;
+	
 	int position;  //of '='
 	for (int i = 0; i < line.length(); i++){
 		if (line[i] == '='){
@@ -61,36 +61,48 @@ void MyCalc::process_line(std::string& line){ //for each line, return the root o
 			break;
 		}
 	}
-
+	std::string name;
 	name = line.substr(0, position);
+	std::string instru;
+	instru = line.substr(position+1,line.length()-position-1);
+	create_variable(name,instru);
+}
+
+void MyCalc::create_variable(string name, string& instru){
+	//if unbalanced barckets or something ambiguous
 	if (name[0] == '~'){
 		Variable * broken_variable = new Variable (name.substr(1,name.length()-1),"broken");
 		variables.push_back(broken_variable);
 	}
+	//if the expression is not problematic
 	else{
 		std::cout << name <<std::endl;
 		Variable * good_variable = new Variable (name,"unsolved");
 		variables.push_back(good_variable);
 
-		std::string instru;
-		instru = line.substr(position+1,line.length()-position-1);
+		//add its instructions
+
 		good_variable->instruction = instru;
 
+		//change into an inorder list
+
 		std::vector< std::pair<Type,std::string> > elements;
-		elements = sort_out(good_variable->name, good_variable->instruction);
+		elements = sort_out(good_variable, good_variable->instruction);
+
+		//change into preorder stack
+		stack< std::pair<Type,std::string> > pre_order;
+		good_variable->pre_order_expressions = in2pre(elements);
 
 		if (elements.size() ==1 && elements[0].first == num){
 			good_variable->status = "solved";
 			good_variable->value = std::stoi(elements[0].second);
 		}
-
-		stack< std::pair<Type,std::string> > pre_order;
-		good_variable->pre_order_expressions = in2pre(elements);
+		
 
 		//debug
-		// while (!pre_order.empty()){
-		// 	std::cout << pre_order.top().second<< " ";
-		// 	pre_order.pop();
+		// while (!good_variable->pre_order_expressions.empty()){
+		// 	std::cout << good_variable->pre_order_expressions.top().second<< " ";
+		// 	good_variable->pre_order_expressions.pop();
 		// }
 		// std::cout <<std::endl;	
 	}
@@ -154,7 +166,7 @@ bool MyCalc::inferior(string a, string b){
 }
 
 
-std::vector< std::pair<Type,std::string> > MyCalc::sort_out(std::string& name, std::string & instructions){ //take the characters and sort them into var, num, baracketes and  operators
+std::vector< std::pair<Type,std::string> > MyCalc::sort_out(Variable * vari, std::string & instructions){ //take the characters and sort them into var, num, baracketes and  operators
 	//and return a pre-order list of all the elements
 
 	std::string tmp;
@@ -229,8 +241,8 @@ std::vector< std::pair<Type,std::string> > MyCalc::sort_out(std::string& name, s
 			}		
 			else{
 
-				std::cout << "ambiguous expression in line: "<< name<<" = "<< instructions <<";"<< std::endl;
-				name = "~"+name;
+				std::cout << "ambiguous expression in line: "<< vari->name<<" = "<< instructions <<";"<< std::endl;
+				vari->status="broken";
 
 			}
 		}
@@ -238,10 +250,10 @@ std::vector< std::pair<Type,std::string> > MyCalc::sort_out(std::string& name, s
 
 
 	//for debug:
-	// for (int i =0; i< instruction_list.size(); i++){
-	// 	std::cout <<instruction_list[i].second <<" ";
-	// }
-	// std::cout <<std::endl;
+	for (int i =0; i< instruction_list.size(); i++){
+		std::cout <<instruction_list[i].second <<" ";
+	}
+	std::cout <<std::endl;
 	return instruction_list; //a list of pairs, which info about its type and its content
 }
 
