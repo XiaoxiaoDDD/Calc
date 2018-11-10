@@ -1,5 +1,6 @@
 #include "mycalc.h"
-#include <stdlib.h> 
+
+
 
 
 MyCalc::MyCalc(char * input_file, char * output_file){
@@ -22,7 +23,8 @@ void MyCalc::read_input(char * file_name){ //read each line, break it into the n
 		while (std::getline(input,line)){
 			line =line.substr(0, line.length() - 1);
 			for (std::string::iterator it = line.begin(); it != line.end(); it++){ //to purge the unnecessary symbols and spaces
-				if (*it !=' ' || *it != ';' || *it != '\0' || *it != '\r'){
+				if ( (ispunct(*it)||isalnum(*it) ) && *it != ';'){
+				//if (isgraph(*it)|| *it !=' ' || *it != ';' || (bool)std::iscntrl(*it) ==0 ){
 					processed_line.push_back(*it);
 					if (*it =='('){
 						opening_bracket.push('(');
@@ -40,7 +42,7 @@ void MyCalc::read_input(char * file_name){ //read each line, break it into the n
 			}
 			lines.push_back(processed_line);
 			//debug: 
-			//std::cout << processed_line <<std::endl;
+			// std::cout << processed_line <<std::endl;
 			processed_line = "";
 			while (!opening_bracket.empty()){
 				opening_bracket.pop();
@@ -72,9 +74,10 @@ void MyCalc::process_line(std::string& line){ //for each line, return the root o
 
 		std::string instru;
 		instru = line.substr(position+1,line.length()-position-1);
+		good_variable->instruction = instru;
 
 		std::vector< std::pair<Type,std::string> > elements;
-		elements = sort_out(instru);
+		elements = sort_out(good_variable->name, good_variable->instruction);
 
 		if (elements.size() ==1 && elements[0].first == num){
 			good_variable->status = "solved";
@@ -82,14 +85,14 @@ void MyCalc::process_line(std::string& line){ //for each line, return the root o
 		}
 
 		stack< std::pair<Type,std::string> > pre_order;
-		pre_order = in2pre(elements);
+		good_variable->pre_order_expressions = in2pre(elements);
 
 		//debug
-		while (!pre_order.empty()){
-			std::cout << pre_order.top().second<< " ";
-			pre_order.pop();
-		}
-		std::cout <<std::endl;	
+		// while (!pre_order.empty()){
+		// 	std::cout << pre_order.top().second<< " ";
+		// 	pre_order.pop();
+		// }
+		// std::cout <<std::endl;	
 	}
 
 
@@ -151,7 +154,7 @@ bool MyCalc::inferior(string a, string b){
 }
 
 
-std::vector< std::pair<Type,std::string> > MyCalc::sort_out(std::string & instructions){ //take the characters and sort them into var, num, baracketes and  operators
+std::vector< std::pair<Type,std::string> > MyCalc::sort_out(std::string& name, std::string & instructions){ //take the characters and sort them into var, num, baracketes and  operators
 	//and return a pre-order list of all the elements
 
 	std::string tmp;
@@ -195,10 +198,12 @@ std::vector< std::pair<Type,std::string> > MyCalc::sort_out(std::string & instru
 
 		}
 		else if (is_operator(*it)){
-			////put the operators characters into a unit, just in case there are ++, --, **
+			//put the operators characters into a unit, just in case there are ++, --, **
 			while(is_operator(*it)){
+				char c = *it;
 				tmp.push_back(*it);
                 it++;
+                if (*it != c) break;
 			}
             it--;
             std::pair<Type,std::string> p;
@@ -207,7 +212,7 @@ std::vector< std::pair<Type,std::string> > MyCalc::sort_out(std::string & instru
 			instruction_list.push_back(p);
 			tmp = "";
 		}
-		else{
+		else {
 			if (*it=='('){
                 std::pair<Type,std::string> p;
 				p.first = bra1;
@@ -221,9 +226,22 @@ std::vector< std::pair<Type,std::string> > MyCalc::sort_out(std::string & instru
 				p.second = ")";
 				instruction_list.push_back(p);
 				tmp = "";
+			}		
+			else{
+
+				std::cout << "ambiguous expression in line: "<< name<<" = "<< instructions <<";"<< std::endl;
+				name = "~"+name;
+
 			}
 		}
 	}
+
+
+	//for debug:
+	// for (int i =0; i< instruction_list.size(); i++){
+	// 	std::cout <<instruction_list[i].second <<" ";
+	// }
+	// std::cout <<std::endl;
 	return instruction_list; //a list of pairs, which info about its type and its content
 }
 
